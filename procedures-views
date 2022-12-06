@@ -1,0 +1,66 @@
+CREATE TABLE IF NOT EXISTS employee_data(
+first_name VARCHAR(10),
+last_name VARCHAR(10),
+annual_salary DECIMAL(8, 2) UNSIGNED,
+address VARCHAR(100),
+email VARCHAR(100) NOT NULL PRIMARY KEY,
+work_phone CHAR(10),
+personal_phone CHAR(10)
+);
+
+CREATE VIEW names_salaries AS SELECT first_name, last_name, annual_salary FROM employee_data;
+
+SELECT * FROM names_salaries ORDER BY annual_salary DESC;
+
+SELECT annual_salary / 26 FROM names_salaries ORDER BY first_name, last_name;
+
+SELECT SUM(annual_salary / 12) FROM names_salaries;
+
+SELECT first_name, last_name, annual_salary FROM names_salaries WHERE annual_salary = (SELECT MAX(annual_salary) FROM names_salaries);
+
+DELIMITER //
+CREATE PROCEDURE employee_data_salary(amount_earned DECIMAL(8, 2) UNSIGNED)
+BEGIN
+SELECT first_name, last_name FROM employee_data WHERE annual_salary > amount_earned;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE salary_range(min_salary DECIMAL(8, 2) UNSIGNED, max_salary DECIMAL(8, 2) UNSIGNED)
+BEGIN
+SELECT first_name, last_name FROM employee_data WHERE annual_salary BETWEEN min_salary AND max_salary ORDER BY annual_salary ASC;
+END //
+DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS game_skills(
+ID TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+skill VARCHAR(15)
+);
+
+CREATE TABLE IF NOT EXISTS job_capability(
+ID TINYINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+game_skillsID TINYINT UNSIGNED,
+employee_dataID TINYINT UNSIGNED,
+skill_rating TINYINT UNSIGNED
+);
+
+CREATE VIEW employees_skill_ranks AS
+SELECT first_name, last_name, skill_rating FROM job_capability
+INNER JOIN employee_data ON employee_data.ID = job_capability.employee_dataID
+INNER JOIN game_skills ON job_capability.game_skillsID = game_skills.ID;
+
+CREATE VIEW names_salaries_skills_ranks AS
+SELECT first_name, last_name, annual_salary, skill, skill_rating FROM job_capability
+INNER JOIN employee_data ON employee_data.ID = job_capability.employee_dataID
+INNER JOIN game_skills ON job_capability.game_skillsID = game_skills.ID;
+
+SELECT * FROM names_salaries_skills_ranks WHERE annual_salary > 50000 ORDER BY annual_salary ASC;
+
+SELECT AVG(skill_rating) FROM names_salaries_skills_ranks WHERE skill = "programming";
+
+DELIMITER //
+CREATE PROCEDURE skill_salary_ratio(first_name VARCHAR(10), last_name VARCHAR(10))
+BEGIN
+SELECT annual_salary / SUM(skill_rating) FROM names_salaries_skills_ranks WHERE first_name = names_salaries_skills_ranks.first_name AND last_name = names_salaries_skills_ranks.last_name GROUP BY annual_salary, first_name, last_name;
+END //
+DELIMITER ;
